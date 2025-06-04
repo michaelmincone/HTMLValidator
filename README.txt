@@ -40,4 +40,3 @@ All whitespace in a document is treated as a space (i.e., the character ' ').
 All whitespace is omitted between the '>' symbol at the end of a tag (open or close), and the start of the next tag or content text.  
 All strings of consecutive whitespace are treated as a single space. This happens both within a tag and within the content (e.g., 4 spaces to indent code in a document would be displayed as a single space on a page). 
 In the descriptions above, text means any string (including the empty string, unless specified otherwise). Any number includes 0. 
-1
