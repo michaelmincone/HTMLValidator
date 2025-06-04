@@ -6,12 +6,13 @@
 #include <stack>
 #include <queue>
 #include <sstream>
+#include <cstddef>
 
 std::string lower(std::string str);
 
-int it;
+std::size_t it;
 
-int advanceitToNextChar(std::string str);
+std::size_t advanceitToNextChar(const std::string &str);
 
 bool properEndTag(std::string document);
 
@@ -286,13 +287,13 @@ Tag *getElementByID(Tag *const root, const std::string &id) {
 
 
 std::string lower(std::string str) {
-    for (int i = 0; i < str.size(); ++i) {
+    for (std::size_t i = 0; i < str.size(); ++i) {
         str.at(i) = tolower(str.at(i));
     }
     return str;
 }
 
-int advanceitToNextChar(std::string str) {
+std::size_t advanceitToNextChar(const std::string &str) {
     while (isspace(str.at(it))) {
         ++it;
     }
