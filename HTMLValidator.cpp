@@ -266,7 +266,7 @@ bool html_is_valid(const std::string &document) {
 
 Tag *getElementByID(Tag *const root, const std::string &id) {
 
-    if (id == "") {
+    if (root == nullptr || id.empty()) {
         return nullptr;
     }
 
@@ -275,10 +275,10 @@ Tag *getElementByID(Tag *const root, const std::string &id) {
     }
 
     for (Tag *each : root->_children) {
-        if (getElementByID(each, id) != nullptr) {
-            return getElementByID(each, id);
+        Tag *result = getElementByID(each, id);
+        if (result != nullptr) {
+            return result;
         }
-        getElementByID(each, id);
     }
 
     return nullptr;
