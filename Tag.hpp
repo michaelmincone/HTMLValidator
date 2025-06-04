@@ -1,13 +1,14 @@
 #ifndef TAG_HPP
 #define TAG_HPP
 
+#include <memory>
 #include <string>
-#include <list>
+#include <vector>
 
 struct Tag {
     std::string _name;
     std::string _id;
-    std::list<Tag*> _children;
+    std::vector<std::unique_ptr<Tag>> _children;
 };
 
 #endif // TAG_HPP

@@ -1,33 +1,34 @@
 
 #include "Tag.hpp"
 #include <algorithm>
-#include <cstring>
-#include <list>
-#include <stack>
-#include <queue>
+#include <cctype>
+#include <memory>
+#include <ranges>
 #include <sstream>
+#include <vector>
 #include <cstddef>
+#include <string_view>
 
 std::string lower(std::string str);
 
 std::size_t it;
 
-std::size_t advanceitToNextChar(const std::string &str);
+std::size_t advanceitToNextChar(std::string_view str);
 
-bool properEndTag(std::string document);
+[[nodiscard]] bool properEndTag(std::string_view document);
 
-bool validPTag(std::string document);
+[[nodiscard]] bool validPTag(std::string_view document);
 
-bool validSpanTag(std::string document);
+[[nodiscard]] bool validSpanTag(std::string_view document);
 
-bool validDivTag(std::string document);
+[[nodiscard]] bool validDivTag(std::string_view document);
 
-bool validBRTag(std::string document);
+[[nodiscard]] bool validBRTag(std::string_view document);
 
-bool validID(std::string document);
+[[nodiscard]] bool validID(std::string_view document);
 
 
-bool html_is_valid(const std::string &document) {
+[[nodiscard]] bool html_is_valid(const std::string &document) {
 
     if (document.empty()) {
         return false;
@@ -41,7 +42,7 @@ bool html_is_valid(const std::string &document) {
         return false;
     }
 
-    std::string docType = document.substr(it, 9); //<!doctype
+    std::string docType(document.substr(it, 9)); //<!doctype
     docType = lower(docType);
 
     if (docType.compare("<!doctype") != 0) {
@@ -50,7 +51,7 @@ bool html_is_valid(const std::string &document) {
     it += 9;
     it = advanceitToNextChar(document);
 
-    std::string h = document.substr(it, 4); //html
+    std::string h(document.substr(it, 4)); //html
     h = lower(h);
 
     if (h.compare("html") != 0) {
@@ -65,7 +66,7 @@ bool html_is_valid(const std::string &document) {
     it += 1;
     it = advanceitToNextChar(document);
 
-    std::string html = document.substr(it, 5); //<html
+    std::string html(document.substr(it, 5)); //<html
     html = lower(html);
 
     if (html.compare("<html") != 0) {
@@ -85,7 +86,7 @@ bool html_is_valid(const std::string &document) {
     it += 1;
     it = advanceitToNextChar(document);
 
-    std::string head = document.substr(it, 5); //<head
+    std::string head(document.substr(it, 5)); //<head
     head = lower(head);
 
     if (head.compare("<head") != 0) {
@@ -104,7 +105,7 @@ bool html_is_valid(const std::string &document) {
     it += 1;  // it is now right after '<head>'
     it = advanceitToNextChar(document);
 
-    std::string title = document.substr(it, 6); //<title
+    std::string title(document.substr(it, 6)); //<title
     title = lower(title);
 
     if (title.compare("<title") != 0) {
@@ -124,7 +125,7 @@ bool html_is_valid(const std::string &document) {
     it += 1; //it now right after <title>
     it = advanceitToNextChar(document);
 
-    std::string cTitle = document.substr(it, 7);
+    std::string cTitle(document.substr(it, 7));
     cTitle = lower(cTitle);
 
     if (cTitle.compare("</title") == 0) { //if title is empty
@@ -153,7 +154,7 @@ bool html_is_valid(const std::string &document) {
     it += 1;  //it now after </title>
     it = advanceitToNextChar(document);
 
-    std::string closeHead = document.substr(it, 6); // </head
+    std::string closeHead(document.substr(it, 6)); // </head
     closeHead = lower(closeHead);
 
     if (closeHead.compare("</head") != 0) {
@@ -170,7 +171,7 @@ bool html_is_valid(const std::string &document) {
     it = advanceitToNextChar(document);
 
 
-    std::string oBody = document.substr(it, 5);
+    std::string oBody(document.substr(it, 5));
     oBody = lower(oBody);
 
     if (oBody.compare("<body") != 0) {
@@ -192,8 +193,8 @@ bool html_is_valid(const std::string &document) {
 
 
         it += 1;
-        std::string cBody = document.substr(it, 6);
-        std::string cBoy = document.substr(it, 100);
+        std::string cBody(document.substr(it, 6));
+        std::string cBoy(document.substr(it, 100));
         cBody = lower(cBody);
         while (cBody.compare("</body") != 0) { //while searching for the closing body tag
 
@@ -240,7 +241,7 @@ bool html_is_valid(const std::string &document) {
         return false;
     }
     it = advanceitToNextChar(document);
-    std::string cHtml = document.substr(it, 6);
+    std::string cHtml(document.substr(it, 6));
     cHtml = lower(cHtml);
 
     if (cHtml.compare("</html") != 0) {
@@ -254,7 +255,7 @@ bool html_is_valid(const std::string &document) {
     it += 1;
 
     while (it < document.size()) {
-        if (!isspace(document.at(it))) {
+        if (!std::isspace(static_cast<unsigned char>(document.at(it)))) {
             return false;
         }
         it += 1;
@@ -275,8 +276,8 @@ Tag *getElementByID(Tag *const root, const std::string &id) {
         return root;
     }
 
-    for (Tag *each : root->_children) {
-        Tag *result = getElementByID(each, id);
+    for (const auto &child : root->_children) {
+        Tag *result = getElementByID(child.get(), id);
         if (result != nullptr) {
             return result;
         }
@@ -287,20 +288,19 @@ Tag *getElementByID(Tag *const root, const std::string &id) {
 
 
 std::string lower(std::string str) {
-    for (std::size_t i = 0; i < str.size(); ++i) {
-        str.at(i) = tolower(str.at(i));
-    }
+    std::ranges::transform(str, str.begin(),
+                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
     return str;
 }
 
-std::size_t advanceitToNextChar(const std::string &str) {
-    while (isspace(str.at(it))) {
+std::size_t advanceitToNextChar(std::string_view str) {
+    while (std::isspace(static_cast<unsigned char>(str.at(it)))) {
         ++it;
     }
     return it;
 }
 
-bool properEndTag(std::string document) {
+[[nodiscard]] bool properEndTag(std::string_view document) {
     it = advanceitToNextChar(document);
     if (document.at(it) == '>') {
         return true;
@@ -308,7 +308,7 @@ bool properEndTag(std::string document) {
     return false;
 }
 
-bool validPTag(std::string document) {
+[[nodiscard]] bool validPTag(std::string_view document) {
     it += 2;
     it = advanceitToNextChar(document);
 
@@ -325,22 +325,22 @@ bool validPTag(std::string document) {
     it += 1;                                  //need to check if there are closing tags inbetween
 
 
-    std::string cP = document.substr(it, 3);
+    std::string cP(document.substr(it, 3));
     cP = lower(cP);
 
     while (cP.compare("</p") != 0) { //while searching for the closing p tag
 
-        std::string cHtml = document.substr(it, 6);
+        std::string cHtml(document.substr(it, 6));
         cHtml = lower(cHtml);
         if (cHtml.compare("</html") == 0) {
             return false;
         }
-        std::string cBody = document.substr(it, 6);
+        std::string cBody(document.substr(it, 6));
         cBody = lower(cBody);
         if (cBody.compare("</body") == 0) {
             return false;
         }
-        std::string oSPan = document.substr(it, 5);
+        std::string oSPan(document.substr(it, 5));
         oSPan = lower(oSPan);
         if (oSPan.compare("<span") == 0) {  //if theres a span tag in the p tag
             if (!validSpanTag(document)) {
@@ -348,7 +348,7 @@ bool validPTag(std::string document) {
             }
 
         }
-        std::string br = document.substr(it, 3);
+        std::string br(document.substr(it, 3));
         br = lower(br);
         if (br.compare("<br") == 0) { //if br tag inside div
             if (!validBRTag(document)) {
@@ -373,7 +373,7 @@ bool validPTag(std::string document) {
     return true;
 }
 
-bool validSpanTag(std::string document) {
+[[nodiscard]] bool validSpanTag(std::string_view document) {
     it += 5;
     it = advanceitToNextChar(document);
 
@@ -387,33 +387,33 @@ bool validSpanTag(std::string document) {
         return false;
     }
     it += 1;
-    std::string cSPan = document.substr(it, 6);
+    std::string cSPan(document.substr(it, 6));
     cSPan = lower(cSPan);
     while (cSPan.compare("</span") != 0) {
 
-        std::string oP = document.substr(it, 2);
+        std::string oP(document.substr(it, 2));
         oP = lower(oP);
         if (oP.compare("<p") == 0) {
             return false;
         }
 
-        std::string oSpan = document.substr(it, 5);
+        std::string oSpan(document.substr(it, 5));
         oSpan = lower(oSpan);
         if (oSpan.compare("<span") == 0) {
             return false;
         }
 
-        std::string cHtml = document.substr(it, 6);
+        std::string cHtml(document.substr(it, 6));
         cHtml = lower(cHtml);
         if (cHtml.compare("</html") == 0) {
             return false;
         }
-        std::string cBody = document.substr(it, 6);
+        std::string cBody(document.substr(it, 6));
         cBody = lower(cBody);
         if (cBody.compare("</body") == 0) {
             return false;
         }
-        std::string oDiv = document.substr(it, 4);
+        std::string oDiv(document.substr(it, 4));
         oDiv = lower(oDiv);
         if (oDiv.compare("<div") == 0) {
             return false;
@@ -434,7 +434,7 @@ bool validSpanTag(std::string document) {
     return true;
 }
 
-bool validDivTag(std::string document) {
+[[nodiscard]] bool validDivTag(std::string_view document) {
     //can have div p br span
     it += 4;
     it = advanceitToNextChar(document);
@@ -449,36 +449,36 @@ bool validDivTag(std::string document) {
         return false;
     }
     it += 1;
-    std::string cDiv = document.substr(it, 5);
+    std::string cDiv(document.substr(it, 5));
     cDiv = lower(cDiv);
     while (cDiv.compare("</div") != 0) { //while searching for ending div tag
 
-        std::string cHtml = document.substr(it, 6);
+        std::string cHtml(document.substr(it, 6));
         cHtml = lower(cHtml);
         if (cHtml.compare("</html") == 0) {
             return false;
         }
-        std::string cBody = document.substr(it, 6);
+        std::string cBody(document.substr(it, 6));
         cBody = lower(cBody);
         if (cBody.compare("</body") == 0) {
             return false;
         }
 
-        std::string oP = document.substr(it, 2);
+        std::string oP(document.substr(it, 2));
         oP = lower(oP);
         if (oP.compare("<p") == 0) { //if p tag inside div
             if (!validPTag(document)) {
                 return false;
             }
         }
-        std::string oSPan = document.substr(it, 5);
+        std::string oSPan(document.substr(it, 5));
         oSPan = lower(oSPan);
         if (oSPan.compare("<span") == 0) { //if span tag inside div
             if (!validSpanTag(document)) {
                 return false;
             }
         }
-        std::string br = document.substr(it, 3);
+        std::string br(document.substr(it, 3));
         br = lower(br);
         if (br.compare("<br") == 0) { //if br tag inside div
             if (!validBRTag(document)) {
@@ -488,7 +488,7 @@ bool validDivTag(std::string document) {
         }
 
 
-        std::string oDiv = document.substr(it, 4);
+        std::string oDiv(document.substr(it, 4));
         oDiv = lower(oDiv);
         if (oDiv.compare("<div") == 0) {
             if (!validDivTag(document)) {
@@ -507,7 +507,7 @@ bool validDivTag(std::string document) {
     return true;
 }
 
-bool validBRTag(std::string document) {
+[[nodiscard]] bool validBRTag(std::string_view document) {
 
     it += 3;
     it = advanceitToNextChar(document);
@@ -527,7 +527,7 @@ bool validBRTag(std::string document) {
         it += 1;
         while (document.at(it) != '"') {
 
-            if (isspace(document.at(it))) {
+            if (std::isspace(static_cast<unsigned char>(document.at(it)))) {
                 return false;
             }
             it += 1;
@@ -549,7 +549,7 @@ bool validBRTag(std::string document) {
     return true;
 }
 
-bool validID(std::string document) {
+[[nodiscard]] bool validID(std::string_view document) {
     it += 2;
     it = advanceitToNextChar(document);
 
@@ -567,7 +567,7 @@ bool validID(std::string document) {
         if (document.at(it) == '/') {
             return false;
         }
-        if (isspace(document.at(it))) {
+        if (std::isspace(static_cast<unsigned char>(document.at(it)))) {
             return false;
         }
         it += 1;
