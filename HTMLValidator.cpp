@@ -171,7 +171,7 @@ void advanceToNextChar(std::string_view str, std::size_t &pos);
     }
 
 
-    if (oBody.compare("<body") == 0) {   //if there is a body tag
+    if (iequals(oBody, "<body")) {   //if there is a body tag
         pos += 5;
         advanceToNextChar(doc, pos);
         if (doc.substr(pos, 2).compare("id") == 0) {
